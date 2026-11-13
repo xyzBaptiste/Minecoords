@@ -1,4 +1,4 @@
-import os
+import os, shutil
 import keyboard
 import pyfiglet
 from rich.console import Console
@@ -7,6 +7,8 @@ from rich.align import Align
 from rich.panel import Panel
 from rich import box
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
+
+from screenshot import screenShot
 
 console = Console()
 #Commandes de base :
@@ -44,17 +46,36 @@ def gradientTitle(debut = (0, 90, 0), fin = (140, 255, 120)) -> None :
             t.stylize(f"rgb({r},{g},{b})", i, i + 1)
         console.print(Align.center(t))
         
-def textWrite() -> None :
+import atexit
+
+def textWrite() -> None:
     console.print()
     console.rule("[purple]Menu principal", style="magenta")
-    console.print("...")
-    console.rule("", style="magenta")
-    keyb = Prompt.ask("Wich key do you want to set ?")
+    console.print("Store fastly your screenshots on a specified channel of your Discord server !\n")
+    console.print("How to use ?\n")
+    console.rule(style="magenta")
+
+    keyb = Prompt.ask("Which key do you want to set ?")
+    console.print(f"[cyan]Press [bold]{keyb}[/bold] anytime to take a screenshot (Ctrl+C to quit)[/cyan]")
+
+    while True:
+        keyboard.wait(keyb)
+        screenShot()
+        console.print(f"[green]Screenshot taken ({keyb})[/green]")
+
     
-    keyboard.wait(keyb)
-    console.print(f"[green]You pressed {keyb}[/green]")
-    
-    
-    
+def clean() -> None:
+    chemin = os.path.abspath("screenshotsMc")
+    if os.path.isdir(chemin):
+        try:
+            shutil.rmtree(chemin)
+            console.print("[green]Dossier de captures supprimé.[/green]")
+        except Exception as e:
+            console.print(f"[red]Error, the file is not delete : {e}[/red]")
+    else:
+        console.print("[yellow]Aucune capture à supprimer.[/yellow]")
+        
+
+atexit.register(clean)
 gradientTitle()
 textWrite()
