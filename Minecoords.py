@@ -1,37 +1,20 @@
-import os, shutil
+import os
+import shutil
 import keyboard
 import pyfiglet
 from rich.console import Console
 from rich.text import Text
 from rich.align import Align
-from rich.panel import Panel
-from rich import box
-from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
+from rich.prompt import Prompt
 
 from screenshot import screenShot
 
 console = Console()
-#Commandes de base :
-#console.print("[bold]Gras[/bold], [italic]italique[/italic], [underline]souligné[/underline]")
-#console.print("[red]Rouge[/red] [green]Vert[/green] [blue]Bleu[/blue]")
-#console.print("[bold white on blue] Texte blanc sur fond bleu [/]")
-#console.print("[#ff8800]Couleur hexadécimale[/]")
-#console.print("[rgb(255,100,0)]Couleur RVB[/]")
 
-#Dégradé :
-#texte = Text("Minecoords")
-#texte.stylize("bold green", 0, 4)   # style sur les caractères 0 à 4
-#texte.stylize("bold yellow", 4, 10)
-#console.print(texte)
-#Mise en page :
-#console.print(Align.center("[bold]Texte centré[/bold]"))
-#console.print(Align.right("À droite"))
-#Ligne autour du texte :
-#console.rule("[bold cyan]Menu principal", style="magenta")
-
-
-def gradientTitle(debut = (0, 90, 0), fin = (140, 255, 120)) -> None :
-    """Write the title with green gradient (default)."""
+def gradientTitle(debut=(0, 90, 0), fin=(140, 255, 120)) -> None :
+    """
+    Green gradient for tittle.
+    """
     titre = pyfiglet.figlet_format("Minecoords", font="slant", width=console.width)
     lignes = titre.splitlines()
     largeur = max(len(l) for l in lignes)
@@ -45,37 +28,64 @@ def gradientTitle(debut = (0, 90, 0), fin = (140, 255, 120)) -> None :
             b = int(debut[2] + (fin[2] - debut[2]) * ratio)
             t.stylize(f"rgb({r},{g},{b})", i, i + 1)
         console.print(Align.center(t))
-        
-import atexit
 
-def textWrite() -> None:
+
+def demander_webhook() -> str :
+    """
+    Asks for Discord webhook.
+    """
+    while True :
+        url = Prompt.ask("[cyan]Past the URL of the Discord webhook[/cyan]").strip()
+        if url.startswith("https://discord.com/api/webhooks/") or url.startswith("https://discordapp.com/api/webhooks/") :
+            return url
+        console.print("[red]Invalid URL, it must start with https://discord.com/api/webhooks/[/red]")
+
+
+def textWrite() -> None :
+    """
+    Writes texts.
+    """
     console.print()
-    console.rule("[purple]Menu principal", style="magenta")
+    console.rule("[purple]Principal menu", style="magenta")
     console.print("Store fastly your screenshots on a specified channel of your Discord server !\n")
-    console.print("How to use ?\n")
     console.rule(style="magenta")
 
-    keyb = Prompt.ask("Which key do you want to set ?")
-    console.print(f"[cyan]Press [bold]{keyb}[/bold] anytime to take a screenshot (Ctrl+C to quit)[/cyan]")
+    webhook_url = demander_webhook()
 
-    while True:
+    keyb = Prompt.ask("[cyan]Which key do you want to set ?[/cyan]").strip().lower()
+    console.print(f"[cyan]Press [bold]{keyb}[/bold] anytime to take a screenshot (Ctrl+C to quit)[/cyan]\n")
+
+    while True :
         keyboard.wait(keyb)
-        screenShot()
-        console.print(f"[green]Screenshot taken ({keyb})[/green]")
+        screenShot(webhook_url)
 
-    
-def clean() -> None:
+
+def clean() -> None :
+    """
+    Deletes the local screenshots folder.
+    """
     chemin = os.path.abspath("screenshotsMc")
-    if os.path.isdir(chemin):
-        try:
+    if os.path.isdir(chemin) :
+        try :
             shutil.rmtree(chemin)
-            console.print("[green]Dossier de captures supprimé.[/green]")
-        except Exception as e:
-            console.print(f"[red]Error, the file is not delete : {e}[/red]")
-    else:
-        console.print("[yellow]Aucune capture à supprimer.[/yellow]")
-        
+            console.print("[dim]The capture folder has been deleted.[/dim]")
+        except Exception as e :
+            console.print(f"[red]Error while deleting : {e}[/red]")
+    else :
+        console.print("[dim]No such captures to delete.[/dim]")
 
-atexit.register(clean)
-gradientTitle()
-textWrite()
+
+def main() -> None :
+    gradientTitle()
+    try :
+        textWrite()
+    except KeyboardInterrupt :
+        console.print("\n[yellow]Interruption detected.[/yellow]")
+    finally :
+        clean()
+        console.print("\n[dim]Press enter to leave.[/dim]")
+        input()
+
+
+if __name__ == "__main__" :
+    main()

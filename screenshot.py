@@ -1,17 +1,45 @@
 from PIL import ImageGrab
 import datetime
 import os
+import requests
+from rich.console import Console
 
-# --- Prise du screen et enregistrement :
+console = Console()
 
-def screenShot() -> None:
+
+def envoyer_discord(chemin_image : str, webhook_url : str, message : str = "") -> bool :
     """
-    Takes a screenshot and saves it in a folder named 'screenshotsMc'.
+    Sends an image on Discord with webhook_url.
     """
-    if not os.path.exists('screenshotsMc'):
-        os.makedirs('screenshotsMc')
+    try :
+        with open(chemin_image, "rb") as f :
+            fichiers = {"file": (os.path.basename(chemin_image), f)}
+            data = {"content": message}
+            reponse = requests.post(webhook_url, data=data, files=fichiers, timeout=10)
+    except requests.RequestException as e :
+        console.print(f"[red]Network error while sending : {e}[/red]")
+        return False
+
+    if reponse.status_code in (200, 204) :
+        return True
+    console.print(f"[red]Discord Error ({reponse.status_code}) : {reponse.text}[/red]")
+    return False
+
+
+def screenShot(webhook_url : str) -> None :
+    
+    if not os.path.exists("screenshotsMc") :
+        os.makedirs("screenshotsMc")
+
     screenshot = ImageGrab.grab()
     timestamp = datetime.datetime.now().strftime("%d%m%Y-%Hh%Mm%Ss")
-    filename = f"screenshotsMc/Minecoord{timestamp}.png"
+    filename = os.path.join("screenshotsMc", f"Minecoord{timestamp}.png")
     screenshot.save(filename, "PNG")
-    print(f"Capture d'écran enregistrée sous : {filename}")
+
+    with console.status("[bold green]Sending on Discord...[/bold green]", spinner="dots") :
+        succes = envoyer_discord(filename, webhook_url, f"New MineCoords ! — Date : {timestamp}")
+
+    if succes :
+        console.print(f"[green]Screenshot has been saved ! {filename}[/green]")
+    else :
+        console.print(f"[yellow]Screenshot saved locally but not sent : {filename}[/yellow]")
